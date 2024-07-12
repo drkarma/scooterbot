@@ -11,13 +11,12 @@ class Rewards(commands.Cog):
 
    
     @commands.command(
-        help="Use this command to add a new task it has arguments see description how to use it attr1 <name of task> attr2 <how many points> attr3 <need to be acknowledged - True/False>"
+        help="Use this command to add a new reward attr1 <name of reward> attr2 <description> attr3 <points> attr4 <is it a minuterate - True/False>"
     )
-   # @commands.has_role('taskadmin')  # Only users with the "taskadmin" role can use this command
-
-    async def add_task(self, ctx, task_name: str, task_description: str , points: float, requires_verification: bool):
-        print ("Hej \n\n")
-        task_author = str(ctx.author)
+   
+    async def add_reward(self, ctx, reward_name: str, reward_description: str , cost: float, reward_rate: bool):
+        #print ("Hej \n\n")
+        reward_author = str(ctx.author)
         # conn = get_db_connection()
         # c = conn.cursor()
         # c.execute('INSERT INTO tasks (task_name, task_description, points, requires_verification) VALUES (?, ?, ?, ?)',
@@ -29,21 +28,24 @@ class Rewards(commands.Cog):
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('INSERT INTO tasks (task_name, task_description, task_contributor, points, requires_verification) VALUES (?, ?, ?, ?, ?)',
-                      (task_name, task_description, task_author, points, requires_verification))
+            c.execute('INSERT INTO rewards (reward_name, reward_description, reward_contributor, cost, reward_rate) VALUES (?, ?, ?, ?, ?)',
+                      (reward_name, reward_description, reward_author, cost, reward_rate))
             conn.commit()
             conn.close()
-            await ctx.send(f'Task {task_name} added with {points} points. by {task_author}')
+            if reward_rate:
+                await ctx.send(f'Reward Rate (cost per minute) {reward_name} added with {cost} cost. by {reward_author}')
+            else:
+                await ctx.send(f'Reward {reward_name} added with {cost} cost. by {reward_author}')
+
         else:
-            await ctx.send('You do not have permission to add tasks.')
+            await ctx.send('You do not have permission to add rewards.')
     @commands.command(
-        help="Deletes a task. Usage: !delete_task <task_id>"
+        help="Deletes a reward. Usage: !delete_reward <task_id>"
     )
 
-    #@commands.has_role('parent')  # Only users with the "parent" role can use this command
-    async def delete_task(self, ctx, task_id: int):
+    async def delete_reward(self, ctx, ent_id: int):
         """
-        Deletes a task.
+        Deletes a reward.
 
         Arguments:
         task_id -- The ID of the task to delete.
@@ -51,68 +53,68 @@ class Rewards(commands.Cog):
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+            c.execute('DELETE FROM rewards WHERE id = ?', (ent_id,))
             if c.rowcount == 0:
-                await ctx.send(f"Task ID {task_id} not found.")
+                await ctx.send(f"Reward ID {ent_id} not found.")
             else:
                 conn.commit()
-                await ctx.send(f'Task ID {task_id} has been deleted.')
+                await ctx.send(f'Reward ID {ent_id} has been deleted.')
             conn.close()
         else:
-            await ctx.send('You do not have permission to delete tasks.')
+            await ctx.send('You do not have permission to delete rewards.')
     
     @commands.command(
-        help="Updates an existing task. Usage: !update_task <task_id> <name> <points> <requires_verification>"
+        help="Updates an existing rewards. Usage: !update_reward <ent_id> <name> <cost> <reward_Rate True/False>"
     )
-    #@commands.has_role('parent')  # Only users with the "parent" role can use this command
-    async def update_task(self, ctx, task_id: int, name: str, points: float, requires_verification: bool):
+    
+    async def update_reward(self, ctx, ent_id: int, name: str, cost: float, reward_rate: bool):
         """
-        Updates an existing task.
+        Updates an existing reward.
 
         Arguments:
-        task_id -- The ID of the task to update.
-        name -- The new name of the task.
-        points -- The new points for the task.
-        requires_verification -- The new verification requirement for the task.
+        ent_id -- The ID of the reward to update.
+        name -- The new name of the reward.
+        cost -- The new cost for the reward.
+        reward_rate -- True if reward is a cost per minute.
         """
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('UPDATE tasks SET task_name = ?, points = ?, requires_verification = ? WHERE id = ?',
-                      (name, points, requires_verification, task_id))
+            c.execute('UPDATE rewards SET reward_name = ?, cost = ?, reward_Rate = ? WHERE id = ?',
+                      (name, cost, reward_rate, ent_id))
             if c.rowcount == 0:
-                await ctx.send(f"Task ID {task_id} not found.")
+                await ctx.send(f"Reward ID {ent_id} not found.")
             else:
                 conn.commit()
-                await ctx.send(f'Task ID {task_id} updated to {name} with {points} points and verification requirement: {requires_verification}.')
+                await ctx.send(f'Reward ID {ent_id} updated to {name} with {cost} points and reward_rate: {reward_rate}.')
             conn.close()
         else:
-            await ctx.send('You do not have permission to update tasks.')
+            await ctx.send('You do not have permission to update rewards.')
 
     @commands.command(
-        help="Lists all tasks."
+        help="Lists all available rewards."
     )
-    async def list_tasks(self, ctx):
+    async def list_rewards(self, ctx):
         """
-        Lists all tasks.
+        Lists all rewards.
         """
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute('SELECT id, task_name, task_description, points, requires_verification FROM tasks')
-        tasks = c.fetchall()
+        c.execute('SELECT id, reward_name, reward_description, cost, reward_rate FROM rewards')
+        rewards = c.fetchall()
         conn.close()
 
-        if tasks:
-            tasks_list = "\n".join([f"ID: {task[0]}, Name: {task[1]}, Description: {task[2]}, Points: {task[3]}, Verification Required: {task[4]}" for task in tasks])
-            await ctx.send(f"Tasks:\n{tasks_list}")
+        if rewards:
+            rewards_list = "\n".join([f"ID: {reward[0]}, Name: {reward[1]}, Description: {reward[2]}, Points: {reward[3]}, Cost is rate per minute?: {reward[4]}" for reward in rewards])
+            await ctx.send(f"Rewards:\n{rewards_list}")
         else:
-            await ctx.send("No tasks found.")
+            await ctx.send("No rewards found.")
 
     @commands.command(
-        help="Updates the description of an existing task. Usage: !update_taskdesc <task_id> <new_description>"
+        help="Updates the description of an existing task. Usage: !update_rewarddesc <ent_id> <new_description>"
     )
     #@commands.has_role('parent')  # Only users with the "parent" role can use this command
-    async def update_taskdesc(self, ctx, task_id: int, *, new_description: str):
+    async def update_rewarddesc(self, ctx, ent_id: int, *, new_description: str):
         """
         Updates the description of an existing task.
 
@@ -123,72 +125,71 @@ class Rewards(commands.Cog):
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('UPDATE tasks SET task_description = ? WHERE id = ?', (new_description, task_id))
+            c.execute('UPDATE rewards SET reward_description = ? WHERE id = ?', (new_description, ent_id))
             if c.rowcount == 0:
-                await ctx.send(f"Task ID {task_id} not found.")
+                await ctx.send(f"Reward ID {ent_id} not found.")
             else:
                 conn.commit()
-                await ctx.send(f'Task ID {task_id} updated with new description.')
+                await ctx.send(f'Reward ID {ent_id} updated with new description.')
             conn.close()
         else:
-            await ctx.send('You do not have permission to update tasks.')
+            await ctx.send('You do not have permission to update rewards.')
 
     @commands.command(
         help="Updates the name of an existing task. Usage: !update_taskname <task_id> <new_name>"
     )
-    #@commands.has_role('parent')  # Only users with the "parent" role can use this command
-    async def update_taskname(self, ctx, task_id: int, *, new_name: str):
+    async def update_rewardname(self, ctx, ent_id: int, *, new_name: str):
         """
-        Updates the description of an existing task.
+        Updates the description of an existing reward.
 
         Arguments:
-        task_id -- The ID of the task to update.
-        new_description -- The new description of the task.
+        task_id -- The ID of the reward to update.
+        new_description -- The new description of the reward.
         """
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('UPDATE tasks SET task_name = ? WHERE id = ?', (new_name, task_id))
+            c.execute('UPDATE rewards SET reward_name = ? WHERE id = ?', (new_name, ent_id))
             if c.rowcount == 0:
-                await ctx.send(f"Task ID {task_id} not found.")
+                await ctx.send(f"Reward ID {ent_id} not found.")
             else:
                 conn.commit()
-                await ctx.send(f'Task ID {task_id} updated with new name.')
+                await ctx.send(f'Reward ID {ent_id} updated with new name.')
             conn.close()
         else:
-            await ctx.send('You do not have permission to update tasks.')
+            await ctx.send('You do not have permission to update rewards.')
     
     @commands.command(
-        help="Toggles the verification requirement of a task. Usage: !toggle_validation <task_id>"
+        help="Toggles the reward_rate of a reward. If true then it's a cost per minute Usage: !toggle_rewardisrate <task_id>"
     )
     #@commands.has_role('parent')  # Only users with the "parent" role can use this command
-    async def toggle_validation(self, ctx, task_id: int):
+    async def toggle_rewardisrate(self, ctx, ent_id: int):
         """
         Toggles the verification requirement of a task.
 
         Arguments:
-        task_id -- The ID of the task to update.
+        ent_id  -- The ID of the reward to update.
         """
         if ctx.author.guild_permissions.administrator:
             conn = get_db_connection()
             c = conn.cursor()
-            c.execute('SELECT requires_verification FROM tasks WHERE id = ?', (task_id,))
-            task = c.fetchone()
-            if not task:
-                await ctx.send(f"Task ID {task_id} not found.")
+            c.execute('SELECT reward_rate FROM rewards WHERE id = ?', (ent_id,))
+            entity = c.fetchone()
+            if not entity:
+                await ctx.send(f"Reward ID {ent_id} not found.")
                 conn.close()
                 return
 
-            requires_verification = not task[0]
-            c.execute('UPDATE tasks SET requires_verification = ? WHERE id = ?', (requires_verification, task_id))
+            entity_value = not entity[0]
+            c.execute('UPDATE rewards SET reward_rate = ? WHERE id = ?', (entity_value, ent_id))
             if c.rowcount == 0:
-                await ctx.send(f"Task ID {task_id} not found.")
+                await ctx.send(f"Reward ID {ent_id} not found.")
             else:
                 conn.commit()
-                await ctx.send(f'Task ID {task_id} verification requirement toggled to {requires_verification}.')
+                await ctx.send(f'Reward ID {ent_id} verification requirement toggled to {entity_value}.')
             conn.close()
         else:
-            await ctx.send('You do not have permission to update tasks.')
+            await ctx.send('You do not have permission to update rewards.')
 
 async def setup(bot):
-    await bot.add_cog(Tasks(bot))
+    await bot.add_cog(Rewards(bot))

@@ -18,8 +18,8 @@ intents.members = True  # Enable Server Members Intent if needed
 # SSL context
 ssl_context = ssl.create_default_context(cafile=certifi.where())
 
-initial_extensions = ['cogs.tasks', 'cogs.helper', 'cogs.transaction']
-#, 'cogs.rewards', 'cogs.transactions', 'cogs.users']
+initial_extensions = ['cogs.tasks', 'cogs.helper', 'cogs.transaction', 'cogs.rewards']
+#, 'cogs.rewards', 'cogs.transactions', 'cogs.users', cogs.rewards]
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
