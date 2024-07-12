@@ -105,10 +105,28 @@ class Rewards(commands.Cog):
         conn.close()
 
         if rewards:
-            rewards_list = "\n".join([f"ID: {reward[0]}, Name: {reward[1]}, Description: {reward[2]}, Points: {reward[3]}, Cost is rate per minute?: {reward[4]}" for reward in rewards])
-            await ctx.send(f"Rewards:\n{rewards_list}")
+            response = "```\n"
+            response += "{:<4} {:<20} {:<30} {:<10} {:<10}\n".format("ID", "Name", "Description", "cost", "cost/minute")
+            response += "-" * 75 + "\n"
+            for reward in rewards:
+               # response += "{:<5} {:<20} {:<30} {:<10} {:<10}\n".format(reward[0], reward[1], reward[2], reward[3], reward[4])
+                response += "{:<4} {:<20} {:<30} {:<10} ".format(reward[0], reward[1], reward[2], reward[3])
+                if reward[4]:
+                    response += "{:<6}\n".format("Yes")
+                else:
+                    response += "{:<6}\n".format("No")
+
+
+            response += "```"
+            await ctx.send(response)
         else:
             await ctx.send("No rewards found.")
+
+        # if rewards:
+        #     rewards_list = "\n".join([f"ID: {reward[0]}, Name: {reward[1]}, Description: {reward[2]}, Points: {reward[3]}, Cost is rate per minute?: {reward[4]}" for reward in rewards])
+        #     await ctx.send(f"Rewards:\n{rewards_list}")
+        # else:
+        #     await ctx.send("No rewards found.")
 
     @commands.command(
         help="Updates the description of an existing task. Usage: !update_rewarddesc <ent_id> <new_description>"

@@ -111,12 +111,27 @@ class Tasks(commands.Cog):
         c.execute('SELECT id, task_name, task_description, points, requires_verification FROM tasks')
         tasks = c.fetchall()
         conn.close()
-
         if tasks:
-            tasks_list = "\n".join([f"ID: {task[0]}, Name: {task[1]}, Description: {task[2]}, Points: {task[3]}, Verification Required: {task[4]}" for task in tasks])
-            await ctx.send(f"Tasks:\n{tasks_list}")
+            response = "```\n"
+            response += "{:<4} {:<20} {:<30} {:<10} {:<10}\n".format("ID", "Name", "Description", "points", "Approval")
+            response += "-" * 75 + "\n"
+            for task in tasks:
+               # response += "{:<5} {:<20} {:<30} {:<10} {:<10}\n".format(reward[0], reward[1], reward[2], reward[3], reward[4])
+                response += "{:<4} {:<20} {:<30} {:<10} ".format(task[0], task[1], task[2], task[3])
+                if task[4]:
+                    response += "{:<6}\n".format("Yes")
+                else:
+                    response += "{:<6}\n".format("No")
+                    response += "```"
+            await ctx.send(response)
         else:
             await ctx.send("No tasks found.")
+
+        # if tasks:
+        #     tasks_list = "\n".join([f"ID: {task[0]}, Name: {task[1]}, Description: {task[2]}, Points: {task[3]}, Verification Required: {task[4]}" for task in tasks])
+        #     await ctx.send(f"Tasks:\n{tasks_list}")
+        # else:
+        #     await ctx.send("No tasks found.")
 
     @commands.command(
         help="Updates the description of an existing task. Usage: !update_taskdesc <task_id> <new_description>"
