@@ -6,8 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
-# scooterbot db
+# scooterbot files
 scooterbot.db
+scooterbot.code-workspace
 
 # Distribution / packaging
 .Python

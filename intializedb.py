@@ -24,7 +24,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS rewards (
                 id INTEGER PRIMARY KEY,
                 reward_name TEXT,
                 reward_description TEXT,
-                cost REAL
+                cost REAL,
+                reward_rate BOOLEAN
             )''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS transactions (
