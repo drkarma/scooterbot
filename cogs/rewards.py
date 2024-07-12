@@ -1,5 +1,6 @@
 from discord.ext import commands
 from utils.database import get_db_connection
+from datetime import datetime
 
 class Rewards(commands.Cog):
     def __init__(self, bot):
@@ -11,7 +12,8 @@ class Rewards(commands.Cog):
 
    
     @commands.command(
-        help="Use this command to add a new reward attr1 <name of reward> attr2 <description> attr3 <points> attr4 <is it a minuterate - True/False>"
+        help="Use this command to add a new reward attr1 <name of reward> attr2 <description> attr3 <points> attr4 <is it a minuterate - True/False>",
+        aliases=['ar']  # This must be a list or tuple of strings
     )
    
     async def add_reward(self, ctx, reward_name: str, reward_description: str , cost: float, reward_rate: bool):
@@ -40,7 +42,8 @@ class Rewards(commands.Cog):
         else:
             await ctx.send('You do not have permission to add rewards.')
     @commands.command(
-        help="Deletes a reward. Usage: !delete_reward <task_id>"
+        help="Deletes a reward. Usage: !delete_reward <task_id>",
+        aliases=['dr']  # This must be a list or tuple of strings
     )
 
     async def delete_reward(self, ctx, ent_id: int):
@@ -64,7 +67,9 @@ class Rewards(commands.Cog):
             await ctx.send('You do not have permission to delete rewards.')
     
     @commands.command(
-        help="Updates an existing rewards. Usage: !update_reward <ent_id> <name> <cost> <reward_Rate True/False>"
+        help="Updates an existing rewards. Usage: !update_reward <ent_id> <name> <cost> <reward_Rate True/False>",
+        aliases=['updr']  # This must be a list or tuple of strings
+
     )
     
     async def update_reward(self, ctx, ent_id: int, name: str, cost: float, reward_rate: bool):
@@ -92,7 +97,9 @@ class Rewards(commands.Cog):
             await ctx.send('You do not have permission to update rewards.')
 
     @commands.command(
-        help="Lists all available rewards."
+        help="Lists all available rewards.",
+        aliases=['lr']  # This must be a list or tuple of strings
+
     )
     async def list_rewards(self, ctx):
         """
@@ -129,7 +136,9 @@ class Rewards(commands.Cog):
         #     await ctx.send("No rewards found.")
 
     @commands.command(
-        help="Updates the description of an existing task. Usage: !update_rewarddesc <ent_id> <new_description>"
+        help="Updates the description of an existing task. Usage: !update_rewarddesc <ent_id> <new_description>",
+        aliases=['updrd']  # This must be a list or tuple of strings
+
     )
     #@commands.has_role('parent')  # Only users with the "parent" role can use this command
     async def update_rewarddesc(self, ctx, ent_id: int, *, new_description: str):
@@ -154,7 +163,9 @@ class Rewards(commands.Cog):
             await ctx.send('You do not have permission to update rewards.')
 
     @commands.command(
-        help="Updates the name of an existing task. Usage: !update_taskname <task_id> <new_name>"
+        help="Updates the name of an existing task. Usage: !update_taskname <task_id> <new_name>",
+        aliases=['updrn']  # This must be a list or tuple of strings
+
     )
     async def update_rewardname(self, ctx, ent_id: int, *, new_name: str):
         """
@@ -208,6 +219,116 @@ class Rewards(commands.Cog):
             conn.close()
         else:
             await ctx.send('You do not have permission to update rewards.')
+
+#ADVANCED OPERATIONS
+    @commands.command(help="Check out a reward. Usage: !checkout_reward <reward_id>",
+                          aliases=['cor']  # This must be a list or tuple of strings    
+                      )
+    async def checkout_reward(self, ctx, reward_id: int):
+        """
+        Check out a reward.
+        """
+        try:
+            conn = get_db_connection()
+            c = conn.cursor()    
+            # Get user details
+            c.execute('SELECT id FROM users WHERE discord_id = ?', (str(ctx.author.id),))
+            user = c.fetchone()
+            if not user:
+                # If user does not exist, create a new entry
+                c.execute('INSERT INTO users (discord_id, user_name, role) VALUES (?, ?, ?)',
+                        (str(ctx.author.id), str(ctx.author), 'user'))
+                conn.commit()
+                c.execute('SELECT id FROM users WHERE discord_id = ?', (str(ctx.author.id),))
+                user = c.fetchone()
+
+            user_id = user[0]
+
+            # Check if the reward is already checked out by any user
+            c.execute('SELECT * FROM checkouts WHERE reward_id = ? AND checkin_time IS NULL', (reward_id,))
+            active_checkout = c.fetchone()
+            if active_checkout:
+                await ctx.send("This reward is currently checked out by another user.")
+                conn.close()
+                return
+
+            checkout_time = datetime.now()
+
+            # Check if the reward exists and has a reward rate
+            c.execute('SELECT reward_name, cost FROM rewards WHERE id = ? AND reward_rate = 1', (reward_id,))
+            reward = c.fetchone()
+            if not reward:
+                await ctx.send("This reward does not exist or is not available for checkout.")
+                conn.close()
+                return
+
+            c.execute('INSERT INTO checkouts (user_id, reward_id, checkout_time) VALUES (?, ?, ?)',
+                      (user_id, reward_id, checkout_time))
+            conn.commit()
+            conn.close()
+
+            await ctx.send(f'You have checked out {reward[0]} at {checkout_time}. Enjoy!')
+        
+        except Exception as e:
+            await ctx.send(f"A user error occurred: {str(e)}")
+            conn.close()
+
+    @commands.command(help="Check in a reward. Usage: !checkin_reward <reward_id>",
+                          aliases=['cir']  # This must be a list or tuple of strings    
+                      )
+    async def checkin_reward(self, ctx, reward_id: int):
+        """
+        Check in a reward.
+        """
+
+        try:
+            conn = get_db_connection()
+            c = conn.cursor()    
+            # Get user details
+            c.execute('SELECT id FROM users WHERE discord_id = ?', (str(ctx.author.id),))
+            user = c.fetchone()
+            if not user:
+                await ctx.send("User not found.")
+                conn.close()
+                return
+
+            user_id = user[0]
+
+            # Get the checkout record
+            c.execute('SELECT id, checkout_time FROM checkouts WHERE user_id = ? AND reward_id = ? AND checkin_time IS NULL',
+                      (user_id, reward_id))
+            checkout = c.fetchone()
+            if not checkout:
+                await ctx.send("No active checkout found for this reward.")
+                conn.close()
+                return
+
+            checkout_id, checkout_time = checkout
+            checkin_time = datetime.now()
+
+            # Calculate the duration and cost
+            duration_minutes = (checkin_time - datetime.strptime(checkout_time, "%Y-%m-%d %H:%M:%S.%f")).total_seconds() / 60
+            c.execute('SELECT reward_name, cost FROM rewards WHERE id = ?', (reward_id,))
+            reward = c.fetchone()
+            cost_per_minute = reward[1]
+            total_cost = duration_minutes * cost_per_minute
+
+            # Insert the transaction
+            c.execute('INSERT INTO transactions (user_id, change, transaction_reason, transaction_pending, transaction_datetime) VALUES (?, ?, ?, ?, ?)',
+                      (user_id, -total_cost, f'Used {reward[0]} for {duration_minutes:.2f} minutes', 0, checkin_time))
+
+            # Update the checkout record
+            c.execute('UPDATE checkouts SET checkin_time = ? WHERE id = ?', (checkin_time, checkout_id))
+            conn.commit()
+            conn.close()
+
+            await ctx.send(f'You have checked in {reward[0]}. Total time: {duration_minutes:.2f} minutes. Total cost: {total_cost:.2f} points.')
+
+        except Exception as e:
+            await ctx.send(f"An error occurred: {str(e)}")
+            conn.close()
+
+
 
 async def setup(bot):
     await bot.add_cog(Rewards(bot))
