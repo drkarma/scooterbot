@@ -14,7 +14,9 @@ class Transactions(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(help="Marks a task as completed. Usage: !didit <task_id>")
+    @commands.command(help="Marks a task as completed. Usage: !didit <task_id>",
+                          aliases=['di']  # This must be a list or tuple of strings    
+                      )
     async def didit(self, ctx, task_id: int):
         try:
             conn = get_db_connection()
@@ -83,7 +85,9 @@ class Transactions(commands.Cog):
 
         conn.close()
 
-    @commands.command(help="Shows all your transactions with a summary of your points. Usage: !mypoints")
+    @commands.command(help="Shows all your transactions with a summary of your points. Usage: !mypoints",
+                          aliases=['mp']  # This must be a list or tuple of strings    
+                      )
     async def mypoints(self, ctx):
         conn = get_db_connection()
         c = conn.cursor()
@@ -124,18 +128,18 @@ class Transactions(commands.Cog):
             # Format the response
             response = f"Transaction history for {ctx.author.name}:\n"
             response += "```\n"
-            response += "{:<20} {:<10} {:<30} {:<10}\n".format("Date/Time", "Change", "Reason", "Pending")
-            response += "-" * 70 + "\n"
+            response += "{:<22} {:<8} {:<40} {:<10}\n".format("Date/Time", "Change", "Reason", "Pending")
+            response += "-" * 80 + "\n"
             for trans in transactions:
                 date_time, change, reason, pending = trans
                 #datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
                 #response += "{:<20} {:<10} {:<30} {:<10}\n".format(date_time, change, reason, "Yes" if pending else "No")
-                response += "{:<20} {:<10} {:<30} {:<10}\n".format(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S"), change, reason, "Yes" if pending else "No")
+                response += "{:<22} {:<8.1f} {:<40} {:<10}\n".format(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S"), change, reason, "Yes" if pending else "No")
 
-            response += "-" * 70 + "\n"
-            response += f"Usable points: {usable_points}\n"
-            response += f"Pending points: {pending_points}\n"
-            response += f"Total points: {total_points}\n"
+            response += "-" * 80 + "\n"
+            response += f"Usable points: {usable_points:.1f}\n"
+            response += f"Pending points: {pending_points:.1f}\n"
+            response += f"Total points: {total_points:.1f}\n"
             response += "```"
 
             await ctx.send(response)
@@ -144,61 +148,6 @@ class Transactions(commands.Cog):
             await ctx.send(f"An error occurred (e4) point status: {e}")
         finally:
             conn.close()
-
-    # @commands.command(help="Shows all your transactions with a summary of your points. Usage: !mypoints")
-    # async def mypoints(self, ctx):
-    #     conn = self.get_db_connection()
-    #     c = conn.cursor()
-
-    #     try:
-    #         # Get user details
-    #         c.execute('SELECT id FROM users WHERE discord_id = ?', (str(ctx.author.id),))
-    #         user = c.fetchone()
-    #         print(str(user))
-
-    #         if not user:
-    #             await ctx.send("You have no transactions recorded.")
-    #             return
-
-    #         user_id = user[0]
-
-    #         # Get all transactions for the user
-    #         c.execute('SELECT transaction_daytime, change, transaction_reason, transaction_pending FROM transactions WHERE user_id = ?', (user_id,))
-    #         transactions = c.fetchall()
-
-    #         if not transactions:
-    #             await ctx.send("You have no transactions recorded.")
-    #             return
-
-    #         # Calculate points
-    #         c.execute('SELECT SUM(change) FROM transactions WHERE user_id = ? AND transaction_pending = 0', (user_id,))
-    #         usable_points = c.fetchone()[0] or 0
-
-    #         c.execute('SELECT SUM(change) FROM transactions WHERE user_id = ? AND transaction_pending = 1', (user_id,))
-    #         pending_points = c.fetchone()[0] or 0
-
-    #         total_points = usable_points + pending_points
-
-    #         # Format the response
-    #         response = f"Transaction history for {ctx.author.name}:\n"
-    #         response += "```\n"
-    #         response += "{:<20} {:<10} {:<30} {:<10}\n".format("Date/Time", "Change", "Reason", "Pending")
-    #         response += "-" * 70 + "\n"
-    #         for trans in transactions:
-    #             date_time, change, reason, pending = trans
-    #             response += "{:<20} {:<10} {:<30} {:<10}\n".format(date_time, change, reason, "Yes" if pending else "No")
-    #         response += "-" * 70 + "\n"
-    #         response += f"Usable points: {usable_points}\n"
-    #         response += f"Pending points: {pending_points}\n"
-    #         response += f"Total points: {total_points}\n"
-    #         response += "```"
-
-    #         await ctx.send(response)
-    #     except Exception as e:
-    #         print(f"(e4)An error occurred when getting your point status: {e}")
-    #         await ctx.send(f"An error occurred (e4) point status: {e}")
-
-
 
 async def setup(bot):
     await bot.add_cog(Transactions(bot))

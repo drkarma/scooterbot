@@ -29,6 +29,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS rewards (
                 reward_rate BOOLEAN
             )''')
 
+
 c.execute('''CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER,
@@ -37,6 +38,17 @@ c.execute('''CREATE TABLE IF NOT EXISTS transactions (
                 transaction_reason TEXT,
                 transaction_pending BOOLEAN,
                 FOREIGN KEY(user_id) REFERENCES users(id)
+            )''')
+
+# Create checkouts table
+c.execute('''CREATE TABLE IF NOT EXISTS checkouts (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                reward_id INTEGER,
+                checkout_time DATETIME,
+                checkin_time DATETIME,
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(reward_id) REFERENCES rewards(id)
             )''')
 
 conn.commit()

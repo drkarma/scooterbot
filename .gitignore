@@ -9,7 +9,6 @@ __pycache__/
 # scooterbot files
 scooterbot.db
 scooterbot.code-workspace
-
 # Distribution / packaging
 .Python
 build/

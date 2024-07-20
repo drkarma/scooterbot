@@ -105,35 +105,34 @@ class Rewards(commands.Cog):
         """
         Lists all rewards.
         """
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute('SELECT id, reward_name, reward_description, cost, reward_rate FROM rewards')
-        rewards = c.fetchall()
-        conn.close()
+        try:
 
-        if rewards:
-            response = "```\n"
-            response += "{:<4} {:<20} {:<30} {:<10} {:<10}\n".format("ID", "Name", "Description", "cost", "cost/minute")
-            response += "-" * 75 + "\n"
-            for reward in rewards:
-               # response += "{:<5} {:<20} {:<30} {:<10} {:<10}\n".format(reward[0], reward[1], reward[2], reward[3], reward[4])
-                response += "{:<4} {:<20} {:<30} {:<10} ".format(reward[0], reward[1], reward[2], reward[3])
-                if reward[4]:
-                    response += "{:<6}\n".format("Yes")
-                else:
-                    response += "{:<6}\n".format("No")
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('SELECT id, reward_name, reward_description, cost, reward_rate FROM rewards')
+            rewards = c.fetchall()
+            conn.close()
 
+            if rewards:
+                response = "Rewards\n```\n"
+                response += "{:<4} {:<20} {:<30} {:<10} {:<10}\n".format("ID", "Name", "Description", "cost", "cost/minute")
+                response += "-" * 75 + "\n"
+                for reward in rewards:
+                    line = "{:<4} {:<25} {:<50} {:<10} {:<10}\n".format(
+                        reward[0], reward[1], reward[2], reward[3], "Yes" if reward[4] else "No")
+                    if len(response) + len(line) >= 2000:
+                        response += "```"
+                        await ctx.send(response)
+                        response = "```\n"
+                    response += line
 
-            response += "```"
-            await ctx.send(response)
-        else:
-            await ctx.send("No rewards found.")
-
-        # if rewards:
-        #     rewards_list = "\n".join([f"ID: {reward[0]}, Name: {reward[1]}, Description: {reward[2]}, Points: {reward[3]}, Cost is rate per minute?: {reward[4]}" for reward in rewards])
-        #     await ctx.send(f"Rewards:\n{rewards_list}")
-        # else:
-        #     await ctx.send("No rewards found.")
+                response += "```"
+                await ctx.send(response)
+            else:
+                await ctx.send("No tasks found.")
+                
+        except Exception as e:
+            await ctx.send(f"An error occurred: {str(e)}")
 
     @commands.command(
         help="Updates the description of an existing task. Usage: !update_rewarddesc <ent_id> <new_description>",
@@ -189,7 +188,9 @@ class Rewards(commands.Cog):
             await ctx.send('You do not have permission to update rewards.')
     
     @commands.command(
-        help="Toggles the reward_rate of a reward. If true then it's a cost per minute Usage: !toggle_rewardisrate <task_id>"
+        help="Toggles the reward_rate. If true then it's a cost per minute Usage: !toggle_rewardisrate <task_id>",
+        aliases=['tr']  # This must be a list or tuple of strings
+
     )
     #@commands.has_role('parent')  # Only users with the "parent" role can use this command
     async def toggle_rewardisrate(self, ctx, ent_id: int):
